@@ -18,6 +18,6 @@ executable alaska-air-revenge
   main-is:             Main.hs
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.8 && <4.9, conduit, text, twitter-conduit, lens, http-conduit, twitter-types-lens, transformers, bytestring, authenticate-oauth, resourcet, aeson, conduit-extra, http-types
+  build-depends:       base >=4.8 && <4.9, conduit, text, twitter-conduit, lens, http-conduit, twitter-types-lens, transformers, bytestring, authenticate-oauth, resourcet, aeson, conduit-extra, http-types, mtl
   -- hs-source-dirs:      
   default-language:    Haskell2010
