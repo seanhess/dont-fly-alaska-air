@@ -1,12 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 
+-- A good-natured, revenge-bot twitter account in thanks to @AlaskaAir for their wonderful customer service and helpful check-in policy :)
+-- Just close the doors when it's too late! I can run!
+
 import Data.Aeson (FromJSON, fromJSON, Result(..), json, Value)
 import Data.ByteString (ByteString)
 import Data.Monoid ((<>))
 import qualified Data.Conduit.Attoparsec as CA
+import Control.Monad (when)
 import Control.Monad.Trans.Resource (runResourceT, ResourceT, MonadResource, MonadThrow, monadThrow)
--- import Control.Monad.Trans.State (runStateT, StateT, get, put)
 import Control.Monad.State (MonadState, get, put, runStateT, StateT)
 import Control.Concurrent (forkIO, threadDelay)
 import Network.HTTP.Types (statusCode)
@@ -25,14 +28,8 @@ import qualified Data.Text.IO as Text
 import Control.Monad.IO.Class
 import Control.Lens
 import System.Environment
-
 import qualified Data.ByteString.Char8 as S8
 
--- when someone mentions AlaskaAir? Wait, that could get excessive. I don't want to reply to each one!
--- when AlaskaAir writes a tweet
--- when someone tweets at AlaskaAir without it being a reply
-
--- shouldreply: if the status text
 
 accountName = "dontflyalaska"
 accountID = 4849803320
@@ -52,72 +49,45 @@ start twInfo mgr = do
     -- call twInfo mgr homeTimeline
     liftIO $ putStrLn "STARTING"
 
-    s <- retryWithDelay 60 (*2) $ streamShowStatus twInfo mgr (statusesFilter accountName [accountID])
+    s <- retryMinuteDouble $ streamShowStatus twInfo mgr (statusesFilter accountName [accountID])
 
     liftIO $ putStrLn "CONNECTED"
     handleStream twInfo mgr s
 
     liftIO $ putStrLn "DONE"
-    -- timeline <- withManager $ \mgr -> 
 
--- connectStream :: (MonadResource m) => ResumableSource m responseType -> ResourceT IO ()
--- connectStream ss = ss $$+- CL.mapM_ $ \status -> liftIO (handleStream status)
-
-retryWithDelay :: MonadIO m => Int -> (Int -> Int) -> m (Maybe a) -> m a
-retryWithDelay delay grow action = do
-    ma <- action
-    case ma of
-      Just a -> return a
-      Nothing -> do
-        liftIO $ putStrLn ("FAILED, delaying for " <> show delay <> "s")
-        liftIO $ threadDelay (delay * 1000 * 1000)
-        retryWithDelay (grow delay) grow action
 
 handleStream :: (MonadState [Text] m, MonadResource m) => TWInfo -> Manager -> ResumableSource m StreamingAPI -> m ()
 handleStream twInfo mgr s = do
     s $$+- CL.mapM_ $ \status -> (handleStatus twInfo mgr status)
 
--- I need to have everything in here so I can send the stuff
 handleStatus :: (MonadState [Text] m, MonadResource m) => TWInfo -> Manager -> StreamingAPI -> m ()
-handleStatus twInfo mgr (SStatus status) = do
-
-    -- liftIO $ putStrLn "STATUS"
-    -- liftIO $ print (status ^. statusText)
-    -- liftIO $ print (shouldRespond status)
-    -- print status
-
-    if shouldRespond status
-      then do
+handleStatus twInfo mgr (SStatus status) =
+    when (shouldRespond status) $ do
+        -- liftIO $ putStrLn "STATUS"
+        -- liftIO $ print (status ^. statusText)
+        -- liftIO $ print (shouldRespond status)
         r <- nextReason
         call twInfo mgr (createResponse status r)
         return ()
-      else
-        return ()
 
 handleStatus _ _ _ = return ()
--- handleStream (SRetweetedStatus _) = putStrLn "RETWEET"
--- handleStream (SEvent e) = print e
--- handleStream (SDelete _) = putStrLn "DELETE"
--- handleStream (SFriends f) = print f
--- handleStream (SUnknown v) = print v
 
 createResponse :: Status -> Text -> APIRequest StatusesUpdate Status
 createResponse status reason =
     update ((Text.pack $ show (status ^. statusId)) <> " Don't fly @AlaskaAir. " <> reason)
       & inReplyToStatusId ?~ (status ^. statusId)
 
-statusReply :: Status -> Text
-statusReply status = "Don't fly @AlaskaAir"
-  -- (status ^. statusText)
-
 dontFlyReasons :: [Text]
 dontFlyReasons =
-    [ "They put snakes on the plane!"
-    , "They use Monsanto soybeans."
-    , "They have this weird obsession with Seattle."
+    [ "There are snakes on the plane!"
+    , "They're in league with Monsanto. Say no to genetically modified aircraft!"
+    , "They'll make you visit Seattle even if you don't want to."
     , "The interior of the plane is carpeted like a VW bus. #VanDownByTheRiver"
     , "You don't know where that thing has been."
     , "Who knows what's really going on in the cockpit? #CockpitTransparency"
+    , "They have a strict policy of closing check-in 40 minutes early"
+    , "Donald Trump likes them."
     ]
 
 nextReason :: (MonadState [Text] m) => m Text
@@ -129,17 +99,14 @@ nextReason = do
         return r
       _ -> return ""
 
--- respond if it's not a reply at all?
--- statusInReplyToStatusId
--- statusInReplyToUserId
--- statusInReplyToScreenName
+
+-- Respond unless this tweet is already itself a response to a status
 shouldRespond :: Status -> Bool
 shouldRespond status =
-    -- (status ^. statusInReplyToUserId == Nothing) &&
     (status ^. statusInReplyToStatusId == Nothing)
-    -- (status ^. statusInReplyToScreenName == Nothing)
 
-
+-- These must be set from the command line before running
+-- See apps.twitter.com to generate some
 getOAuthTokens :: IO TWToken
 getOAuthTokens = do
     consumerKey <- getEnv' "TWITTER_CONSUMER_KEY"
@@ -158,9 +125,26 @@ getOAuthTokens = do
   where
     getEnv' = (S8.pack <$>) . getEnv
 
+------------------------------------------
+
+-- When we are rate-limited, we're supposed to back off exponentially, starting 
+-- with 60s and doubling each time
+retryWithDelay :: MonadIO m => Int -> (Int -> Int) -> m (Maybe a) -> m a
+retryWithDelay delay grow action = do
+    ma <- action
+    case ma of
+      Just a -> return a
+      Nothing -> do
+        liftIO $ putStrLn ("FAILED, delaying for " <> show delay <> "s")
+        liftIO $ threadDelay (delay * 1000 * 1000)
+        retryWithDelay (grow delay) grow action
+
+retryMinuteDouble = retryWithDelay 60 (*2)
 
 --------------------------------------
 
+-- Forked from twitter-conduit to print out the status code
+-- and handle http status errors
 streamShowStatus :: (MonadResource m, FromJSON responseType)
        => TWInfo
        -> Manager
@@ -178,10 +162,12 @@ streamShowStatus info mgr req = do
 
 --------------------------------------------------
 
-statusesFilterEndpoint :: String
-statusesFilterEndpoint = "https://stream.twitter.com/1.1/statuses/filter.json"
 
+-- Forked from twitter-conduit to allow multiple filters with the same stream
+-- They do NOT like one program immediately connecting twice
 statusesFilter :: Text -> [UserId] -> APIRequest StatusesFilter StreamingAPI
 statusesFilter keyword userIds =
     APIRequestPost statusesFilterEndpoint [("track", PVString keyword),("follow", PVIntegerArray userIds)]
 
+statusesFilterEndpoint :: String
+statusesFilterEndpoint = "https://stream.twitter.com/1.1/statuses/filter.json"
