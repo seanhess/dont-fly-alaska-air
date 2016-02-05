@@ -25,7 +25,7 @@ It listens to [Twitter's Streaming API](https://dev.twitter.com/streaming/refere
 Technology
 ----------
 
-I'm using [Haskell](https://www.haskell.org/), and got try [Conduit](https://www.schoolofhaskell.com/school/to-infinity-and-beyond/pick-of-the-week/conduit-overview) for the first time. Conduit lets you process streams of data in constant memory. The [twitter-conduit](https://hackage.haskell.org/package/twitter-conduit-0.1.1.1/docs/Web-Twitter-Conduit.html) package provides access to the Streaming API as a conduit.
+I'm using [Haskell](https://www.haskell.org/), and got to try [Conduit](https://www.schoolofhaskell.com/school/to-infinity-and-beyond/pick-of-the-week/conduit-overview) for the first time. Conduit lets you process streams of data in constant memory. The [twitter-conduit](https://hackage.haskell.org/package/twitter-conduit-0.1.1.1/docs/Web-Twitter-Conduit.html) package provides access to the Streaming API as a conduit.
 
 The only hangup was that twitter-conduit only allows you to filter by one thing at a time. I first tried connecting two streams, but Twitter REALLY doesn't like that and instantly rate limited me. Twitter's docs say to back off exponentially when rate limited, so I wrote [`retryWithDelay`](https://github.com/seanhess/dont-fly-alaska-air/blob/master/Main.hs#L124).
 
