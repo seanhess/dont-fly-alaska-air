@@ -4,47 +4,44 @@
 -- A good-natured, revenge-bot twitter account in thanks to @AlaskaAir for their wonderful customer service and helpful check-in policy :)
 -- Just close the doors when it's too late! I can run!
 
-import Data.Aeson (FromJSON, fromJSON, Result(..), json, Value)
-import Data.ByteString (ByteString)
-import Data.Monoid ((<>))
-import qualified Data.Conduit.Attoparsec as CA
-import Control.Monad (when)
-import Control.Monad.Trans.Resource (runResourceT, ResourceT, MonadResource, MonadThrow, monadThrow)
-import Control.Monad.State (MonadState, get, put, runStateT, StateT)
 import Control.Concurrent (forkIO, threadDelay)
+import Control.Lens ((^.), (&), (?~))
+import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.Trans.Resource (runResourceT, ResourceT, MonadResource, MonadThrow, monadThrow)
+import Data.Aeson (FromJSON)
+import qualified Data.ByteString.Char8 as S8
+import Data.Conduit
+import qualified Data.Conduit.List as CL
+import Data.Monoid ((<>))
+import Data.Text (Text)
+import qualified Data.Text as Text
+import Network.HTTP.Conduit hiding (responseBody, responseStatus, responseHeaders)
 import Network.HTTP.Types (statusCode)
+import System.Environment
+import System.Random (randomRIO)
 import Web.Twitter.Conduit
 import Web.Twitter.Conduit.Stream (stream, statusesFilterByTrack)
 import Web.Twitter.Conduit.Base (makeRequest, getResponse, sinkFromJSON)
 import Web.Twitter.Conduit.Status (update)
-import Web.Twitter.Types.Lens
-import Web.Authenticate.OAuth
-import Network.HTTP.Conduit hiding (responseBody, responseStatus, responseHeaders)
-import Data.Conduit
-import qualified Data.Conduit.List as CL
-import qualified Data.Text as Text
-import Data.Text (Text)
-import qualified Data.Text.IO as Text
-import Control.Monad.IO.Class
-import Control.Lens
-import System.Environment
-import qualified Data.ByteString.Char8 as S8
+import Web.Twitter.Types.Lens (statusText, StreamingAPI(..), Status, statusId, statusInReplyToStatusId, UserId, statusUser, userScreenName)
+import Web.Authenticate.OAuth (oauthConsumerKey, oauthConsumerSecret, Credential(..))
 
-
-accountName = "dontflyalaska"
-accountID = 4849803320
+-- the account to respond to
+accountName = "AlaskaAir"
+accountID = 13192972
 
 main :: IO ()
 main = do
     twToken <- getOAuthTokens
-    let twInfo = TWInfo twToken Nothing -- (Just (Proxy "127.0.0.1" 8888))
+    let twInfo = TWInfo twToken Nothing
 
     mgr <- newManager tlsManagerSettings
-    timeline <- runResourceT $ runStateT (start twInfo mgr) (cycle dontFlyReasons)
+    timeline <- runResourceT $ start twInfo mgr
 
     return ()
 
-start :: TWInfo -> Manager -> StateT [Text] (ResourceT IO) ()
+start :: TWInfo -> Manager -> ResourceT IO ()
 start twInfo mgr = do
     -- call twInfo mgr homeTimeline
     liftIO $ putStrLn "STARTING"
@@ -57,25 +54,25 @@ start twInfo mgr = do
     liftIO $ putStrLn "DONE"
 
 
-handleStream :: (MonadState [Text] m, MonadResource m) => TWInfo -> Manager -> ResumableSource m StreamingAPI -> m ()
+handleStream :: (MonadResource m) => TWInfo -> Manager -> ResumableSource m StreamingAPI -> m ()
 handleStream twInfo mgr s = do
     s $$+- CL.mapM_ $ \status -> (handleStatus twInfo mgr status)
 
-handleStatus :: (MonadState [Text] m, MonadResource m) => TWInfo -> Manager -> StreamingAPI -> m ()
+handleStatus :: (MonadResource m) => TWInfo -> Manager -> StreamingAPI -> m ()
 handleStatus twInfo mgr (SStatus status) =
     when (shouldRespond status) $ do
-        -- liftIO $ putStrLn "STATUS"
+        liftIO $ putStrLn "STATUS"
+        liftIO $ print status
         -- liftIO $ print (status ^. statusText)
         -- liftIO $ print (shouldRespond status)
-        r <- nextReason
+        r <- liftIO $ randomReason
         call twInfo mgr (createResponse status r)
         return ()
-
 handleStatus _ _ _ = return ()
 
 createResponse :: Status -> Text -> APIRequest StatusesUpdate Status
 createResponse status reason =
-    update ((Text.pack $ show (status ^. statusId)) <> " Don't fly @AlaskaAir. " <> reason)
+    update ("@" <> (status ^. statusUser . userScreenName) <> " Don't fly @AlaskaAir. " <> reason)
       & inReplyToStatusId ?~ (status ^. statusId)
 
 dontFlyReasons :: [Text]
@@ -90,14 +87,10 @@ dontFlyReasons =
     , "Donald Trump likes them."
     ]
 
-nextReason :: (MonadState [Text] m) => m Text
-nextReason = do
-    rs <- get
-    case rs of
-      (r : rs') -> do
-        put rs'
-        return r
-      _ -> return ""
+randomReason :: IO Text
+randomReason = do
+    n <- randomRIO (0, (length dontFlyReasons) - 1)
+    return $ dontFlyReasons !! n
 
 
 -- Respond unless this tweet is already itself a response to a status
@@ -169,5 +162,6 @@ statusesFilter :: Text -> [UserId] -> APIRequest StatusesFilter StreamingAPI
 statusesFilter keyword userIds =
     APIRequestPost statusesFilterEndpoint [("track", PVString keyword),("follow", PVIntegerArray userIds)]
 
+-- forked from twitter-conduit because it isn't exported
 statusesFilterEndpoint :: String
 statusesFilterEndpoint = "https://stream.twitter.com/1.1/statuses/filter.json"
