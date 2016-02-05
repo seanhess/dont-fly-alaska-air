@@ -10,7 +10,7 @@ Say hello to [@DontFlyAlaska](http://twitter.com/DontFlyAlaska)
 What is it?
 ------------
 
-[@DontFlyAlaska](http://twitter.com/DontFlyAlaksa) is a good-natured revenge twitter account powered by a Haskell robot
+[@DontFlyAlaska](http://twitter.com/DontFlyAlaksa) is a silly revenge twitter account powered by a Haskell robot
 
 It listens to [Twitter's Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter), and replies to @AlaskaAir or anyone starting a conversation with them, urging them to reconsider their decision for various silly reasons. Here are some examples:
 
@@ -42,7 +42,10 @@ I left the twitter bot on for only about 30 minutes, because, well, it's actuall
 
 Follow [@DontFlyAlaska](http://twitter.com/DontFlyAlaska)
 
-Read more interesting stuff [on my blog](http://seanhess.github.io)
+About me
+--------
+
+I create things, using Haskell and other cool technology. Read more [on my blog](http://seanhess.github.io)
 
 
 
