@@ -62,8 +62,9 @@ handleStatus :: (MonadResource m) => TWInfo -> Manager -> StreamingAPI -> m ()
 handleStatus twInfo mgr (SStatus status) =
     when (shouldRespond status) $ do
         liftIO $ putStrLn "STATUS"
-        liftIO $ print status
-        -- liftIO $ print (status ^. statusText)
+        -- liftIO $ print status
+        liftIO $ print (status ^. statusUser . userScreenName)
+        liftIO $ print (status ^. statusText)
         -- liftIO $ print (shouldRespond status)
         r <- liftIO $ randomReason
         call twInfo mgr (createResponse status r)
