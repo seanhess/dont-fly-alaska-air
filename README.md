@@ -1,16 +1,16 @@
 Don't Fly Alaska Air
 ====================
 
-I was flying to SF for some meetings. I got to the airport 40 minutes early, only to find they had closed check-in 1 minute before. Instead of just giving me a ticket and letting me run for it, they made me wait in line for 20 minutes to rebook my flight. I still got to the gate before the plane left.
+I was flying to SF for some meetings. I got to the airport 40 minutes early, only to find they had closed check-in 1 minute before. Instead of just giving me a ticket and letting me run for it, they made me wait in line for 20 minutes to change my flight. I still got to the gate before the plane left.
 
-As a responsible citizen of the internet, I did my civic duty and promptly complained on twitter. But that clearly wasn't enough to disloge the corrupt status-quo. The only honest choice was to write a revenge twitter account to pester them into changing their policy.
+As a responsible citizen of the internet, I did my civic duty and promptly complained on twitter. But that clearly wasn't enough to reform the corrupt corporate status-quo. The only ethical choice was to write a revenge twitter account to pester them into changing their policy.
 
 Say hello to [@DontFlyAlaska](http://twitter.com/DontFlyAlaska)
 
 What is it?
 ------------
 
-@DontFlyAlaska is a good-natured revenge twitter account powered by a Haskell robot
+[@DontFlyAlaska](http://twitter.com/DontFlyAlaksa) is a good-natured revenge twitter account powered by a Haskell robot
 
 It listens to [Twitter's Streaming API](https://dev.twitter.com/streaming/reference/post/statuses/filter), and replies to @AlaskaAir or anyone starting a conversation with them, urging them to reconsider their decision for various silly reasons. Here are some examples:
 
@@ -27,7 +27,7 @@ Technology
 
 I'm using [Haskell](https://www.haskell.org/), and got try [Conduit](https://www.schoolofhaskell.com/school/to-infinity-and-beyond/pick-of-the-week/conduit-overview) for the first time. Conduit lets you process streams of data in constant memory. The [twitter-conduit](https://hackage.haskell.org/package/twitter-conduit-0.1.1.1/docs/Web-Twitter-Conduit.html) package provides access to the Streaming API as a conduit.
 
-The only hangup was that twitter-conduit only allows you to filter by one thing at a time. I first tried connecting two streams, but Twitter REALLY doesn't like that and instantly rate limited me. Twitter's docs say to back off exponentially when rate limited, so I wrote [`retryWithDelay`](https://github.com/seanhess/dont-fly-alaska-air/blob/master/Main.hs#L130).
+The only hangup was that twitter-conduit only allows you to filter by one thing at a time. I first tried connecting two streams, but Twitter REALLY doesn't like that and instantly rate limited me. Twitter's docs say to back off exponentially when rate limited, so I wrote [`retryWithDelay`](https://github.com/seanhess/dont-fly-alaska-air/blob/master/Main.hs#L124).
 
       retryWithDelay 60 (*2) $ somethingThatReturnsMaybe
 
@@ -41,6 +41,8 @@ I left the twitter bot on for only about 30 minutes, because, well, it's actuall
 ![Cockpit Transparency](http://i.imgur.com/57xtSKQ.png)
 
 Follow [@DontFlyAlaska](http://twitter.com/DontFlyAlaska)
+
+Read more interesting stuff [on my blog](http://seanhess.github.io)
 
 
 
