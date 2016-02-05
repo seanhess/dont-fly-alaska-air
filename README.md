@@ -38,7 +38,7 @@ DontFlyAlaska in Action
 
 I left the twitter bot on for only about 30 minutes, because, well, it's actually very annoying and I'm not THAT mad, but it had some good moments.
 
-![Cockpit Transparency](http://imgur.com/4zLpT8B.png)
+![Cockpit Transparency](http://imgur.com/wfudmr1.png)
 
 Follow [@DontFlyAlaska](http://twitter.com/DontFlyAlaska)
 
