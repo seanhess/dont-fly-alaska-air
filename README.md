@@ -25,15 +25,24 @@ It listens to [Twitter's Streaming API](https://dev.twitter.com/streaming/refere
 Technology
 ----------
 
-I'm using [Haskell](https://www.haskell.org/), and got try [Conduit](https://www.schoolofhaskell.com/school/to-infinity-and-beyond/pick-of-the-week/conduit-overview) for the first time. Conduit is really cool, it lets you process streams of data in constant memory. I combined that with [twitter-conduit](https://hackage.haskell.org/package/twitter-conduit-0.1.1.1/docs/Web-Twitter-Conduit.html).
+I'm using [Haskell](https://www.haskell.org/), and got try [Conduit](https://www.schoolofhaskell.com/school/to-infinity-and-beyond/pick-of-the-week/conduit-overview) for the first time. Conduit lets you process streams of data in constant memory. The [twitter-conduit](https://hackage.haskell.org/package/twitter-conduit-0.1.1.1/docs/Web-Twitter-Conduit.html) package provides access to the Streaming API as a conduit.
 
-It went smoothly, the only hangup was realizing that twitter-conduit didn't property support the filter API. It only allows you to filter by one thing at a time. I first tried connecting two streams, but Twitter REALLY doesn't like that and instantly rate limited me.
+The only hangup was that twitter-conduit only allows you to filter by one thing at a time. I first tried connecting two streams, but Twitter REALLY doesn't like that and instantly rate limited me. Twitter's docs say to back off exponentially when rate limited, so I wrote [`retryWithDelay`](https://github.com/seanhess/dont-fly-alaska-air/blob/master/Main.hs#L130).
 
-Twitter's docs say to back off exponentially when rate limited, so I wrote the [`retryWithDelay`](https://github.com/seanhess/dont-fly-alaska-air/blob/master/Main.hs#L130).
+      retryWithDelay 60 (*2) $ somethingThatReturnsMaybe
 
-      retryWithDelay 60 (*2) $ somethingThatReturnsMaybe a
+I submitted [this pull request](https://github.com/himura/twitter-conduit/pull/41) to twitter-conduit to fix, and forked some functions from twitter-conduit in the meantime.
 
-I submitted [this pull request](https://github.com/himura/twitter-conduit/pull/41) to twitter-conduit to fix.
+DontFlyAlaska in Action
+------------------------
+
+I left the twitter bot on for only about 30 minutes, because, well, it's actually very annoying and I'm not THAT mad, but it had some good moments.
+
+![Cockpit Transparency](http://i.imgur.com/57xtSKQ.png)
+
+Follow [@DontFlyAlaska](http://twitter.com/DontFlyAlaska)
+
+
 
 
 
